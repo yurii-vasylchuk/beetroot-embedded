@@ -1,0 +1,8 @@
+CompileFlags:
+  Remove:
+    - -mlongcalls
+    - -mlong-calls
+    - -mtext-section-literals
+    - -fno-tree-switch-conversion
+    - -fstrict-volatile-bitfields
+    - -mdisable-hardware-atomics
