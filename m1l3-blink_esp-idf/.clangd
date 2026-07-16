@@ -1,0 +1,8 @@
+CompileFlags:
+  # Compiler: /Users/yurii/.platformio/packages/toolchain-xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc
+  # Add: [--target=xtensa-esp32s3-elf]
+  Remove:
+    - -fno-shrink-wrap
+    - -fno-tree-switch-conversion
+    - -fstrict-volatile-bitfields
+    - -mlongcalls
