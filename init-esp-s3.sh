@@ -13,7 +13,7 @@ mkdir "$PROJECT_DIR"
 
 cd "$PROJECT_DIR"
 
-pio init -b esp32-s3-devkitc-1
+pio init --ide vim --sample-code --project-option "framework=espidf" -b esp32-s3-devkitc-1
 
 touch .clangd
 
