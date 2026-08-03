@@ -13,7 +13,23 @@ mkdir "$PROJECT_DIR"
 
 cd "$PROJECT_DIR"
 
-pio init --ide vim --sample-code --project-option "framework=espidf" -b esp32-s3-devkitc-1
+pio init --ide vim --project-option "framework=espidf" -b esp32-s3-devkitc-1
+
+touch ./src/main.cpp
+
+cat >./src/main.cpp <<EOF
+
+#include "driver/gpio.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+
+static const char *TAG = ""; //TODO: Choose tag
+
+extern "C" void app_main() {
+  
+}
+
+EOF
 
 touch .clangd
 
@@ -51,9 +67,11 @@ vim.lsp.config("clangd", {
 EOF
 
 cat >>platformio.ini <<EOF
+board_upload.flash_size = 16MB
+board_upload.maximum_size = 16777216
 
 monitor_speed = 115200
 
 EOF
 
-pio run -t compiledb
+pio run && pio run -t compiledb
