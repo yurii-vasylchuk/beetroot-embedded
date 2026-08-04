@@ -15,7 +15,7 @@ cd "$PROJECT_DIR"
 
 pio init --ide vim --project-option "framework=espidf" -b esp32-s3-devkitc-1
 
-touch ./src/main.cpp
+mv ./src/main.c ./src/main.cpp
 
 cat >./src/main.cpp <<EOF
 
