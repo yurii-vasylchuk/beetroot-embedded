@@ -54,6 +54,7 @@ void IRAM_ATTR register_btn_click_isr(void *arg) {
 }
 
 void btn_click_registrar_task(void *arg) {
+  int64_t last_time = -100000;
   int64_t time;
   int32_t count = 0;
 
@@ -61,6 +62,11 @@ void btn_click_registrar_task(void *arg) {
     if (xQueueReceive(btn_click_queue, &time, portMAX_DELAY) != pdTRUE) {
       continue;
     }
+
+    if (time - last_time < 50000) {
+      continue;
+    }
+    last_time = time;
 
     ESP_LOGI(TAG, "Click registrerd at %" PRId64 "ms; total count %" PRIu32,
              (time / 1000), ++count);
