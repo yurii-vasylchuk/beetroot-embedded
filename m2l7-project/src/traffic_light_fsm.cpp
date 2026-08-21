@@ -9,7 +9,7 @@ namespace traffic_light_fsm {
 
 static const char *TAG = "TLFSM";
 static constexpr std::uint64_t YELLOW_BLINK_PERIOD_MS = 500;
-static constexpr std::uint64_t YELLOW_PERIOD_MS = 1000;
+static constexpr std::uint64_t YELLOW_PERIOD_MS = 3000;
 
 enum state_t {
   RED,
