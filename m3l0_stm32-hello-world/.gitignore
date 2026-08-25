@@ -1,0 +1,67 @@
+# -----------------------------
+# Build directories
+# -----------------------------
+build/
+cmake-build-*/
+out/
+
+# -----------------------------
+# CMake generated files
+# -----------------------------
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+build.ninja
+.ninja_deps
+.ninja_log
+
+# -----------------------------
+# Firmware artifacts
+# -----------------------------
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.lst
+
+# -----------------------------
+# Compiler generated
+# -----------------------------
+*.o
+*.obj
+*.d
+*.su
+*.a
+
+# -----------------------------
+# compile_commands
+# -----------------------------
+compile_commands.json
+
+# -----------------------------
+# IDE / editor
+# -----------------------------
+.vscode/
+.idea/
+*.code-workspace
+
+# macOS
+.DS_Store
+
+# -----------------------------
+# STM32CubeIDE
+# -----------------------------
+.settings/
+.metadata/
+Debug/
+Release/
+
+# -----------------------------
+# Logs / temporary files
+# -----------------------------
+*.log
+*.tmp
+*.bak
+*~
