@@ -31,6 +31,14 @@ extern "C" void app_main() {
 
 EOF
 
+touch sdkconfig.defaults
+
+cat >sdkconfig.defaults <<EOF
+CONFIG_ESPTOOLPY_FLASHSIZE_2MB=n
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+EOF
+
 touch .clangd
 
 cat >./.clangd <<EOF
