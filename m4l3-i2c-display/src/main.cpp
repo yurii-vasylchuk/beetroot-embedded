@@ -10,9 +10,9 @@ static const char *TAG = "M4L3";
 static constexpr gpio_num_t I2C_SDA_GPIO = GPIO_NUM_10;
 static constexpr gpio_num_t I2C_SCL_GPIO = GPIO_NUM_9;
 
-i2c_master_bus_handle_t i2c_bus;
+static i2c_master_bus_handle_t i2c_bus;
 
-void test_bitmap_symbols(ssd1306::handle_t handle);
+static void test_bitmap_symbols(ssd1306::handle_t handle);
 
 extern "C" void app_main() {
   vTaskDelay(pdMS_TO_TICKS(2000));

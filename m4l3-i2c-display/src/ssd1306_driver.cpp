@@ -73,9 +73,11 @@ struct frame_coord_t {
   uint8_t bit;
 };
 
-uint8_t u8(command_t);
-frame_coord_t get_coord(uint16_t x, uint16_t y);
-const uint8_t *find_char_bitmap(const char c);
+static uint8_t u8(command_t);
+
+static frame_coord_t get_coord(uint16_t x, uint16_t y);
+
+static const uint8_t *find_char_bitmap(char c);
 
 handle_t init(config_t &config) {
   esp_err_t err;
@@ -272,7 +274,7 @@ void text(handle_t handle, uint16_t x_offset, uint16_t y_offset, char *text) {
   }
 }
 
-void clear(handle_t handle) {
+void clear(const handle_t handle) {
   if (handle == nullptr) {
     ESP_LOGE(TAG, "Unable to clear: handle arg is null");
     return;
@@ -292,7 +294,7 @@ const uint8_t *find_char_bitmap(const char c) {
   return UNKNOWN_CHARACTER;
 }
 
-frame_coord_t get_coord(uint16_t x, uint16_t y) {
+frame_coord_t get_coord(const uint16_t x, const uint16_t y) {
   return {
       .page = static_cast<uint16_t>((y / 8) * 128 + x),
       .bit = static_cast<uint8_t>(y % 8),
