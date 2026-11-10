@@ -4,8 +4,10 @@
 #include "driver/uhci.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_adc/adc_continuous.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "freertos/task.h"
 
 static const char *TAG = "M4L6";
@@ -23,9 +25,16 @@ static adc_continuous_handle_t adc_handle;
 static adc_cali_handle_t adc_calibration;
 
 // Buffers
-static constexpr uint8_t BUFFERS_COUNT = 2;
-static constexpr uint8_t BUFFER_SIZE = 256;
+static constexpr size_t BUFFERS_COUNT = 2;
+static constexpr size_t BUFFER_SIZE = 256;
 static QueueHandle_t free_buffers;
+
+// UART
+static constexpr uart_port_t UART_PORT = UART_NUM_1;
+static constexpr gpio_num_t UART_TX_GPIO = GPIO_NUM_17;
+static constexpr int UART_BAUD_RATE = 921600;
+
+static uhci_controller_handle_t uhci_handle;
 
 static void init_adc();
 static void init_uart();
@@ -103,10 +112,76 @@ void init_adc() {
     vTaskDelay(pdMS_TO_TICKS(RESTART_DELAY));
     esp_restart();
   }
+
+  err = adc_continuous_start(adc_handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Unable to start continuous ADC, ERR: %s",
+             esp_err_to_name(err));
+    vTaskDelay(pdMS_TO_TICKS(RESTART_DELAY));
+    esp_restart();
+  }
 }
 
 void init_uart() {
-  // TODO: Configure UART and the UHCI DMA controller.
+  esp_err_t err = ESP_OK;
+
+  uart_config_t uart_config = {
+      .baud_rate = UART_BAUD_RATE,
+      .data_bits = UART_DATA_8_BITS,
+      .parity = UART_PARITY_DISABLE,
+      .stop_bits = UART_STOP_BITS_1,
+      .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+      .rx_flow_ctrl_thresh = 0,
+      .source_clk = UART_SCLK_DEFAULT,
+  };
+
+  err = uart_param_config(UART_PORT, &uart_config);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Unable to configure UART parameters, ERR: %s",
+             esp_err_to_name(err));
+    vTaskDelay(pdMS_TO_TICKS(RESTART_DELAY));
+    esp_restart();
+  }
+
+  err = uart_set_pin(UART_PORT, UART_TX_GPIO, UART_PIN_NO_CHANGE,
+                     UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Unable to configure UART pins, ERR: %s",
+             esp_err_to_name(err));
+    vTaskDelay(pdMS_TO_TICKS(RESTART_DELAY));
+    esp_restart();
+  }
+
+  uhci_controller_config_t uhci_config = {
+      .uart_port = UART_PORT,
+      .tx_trans_queue_depth = BUFFERS_COUNT,
+      .max_transmit_size = BUFFER_SIZE,
+      .max_receive_internal_mem = BUFFER_SIZE,
+      .dma_burst_size = 32,
+      .max_packet_receive = 0,
+      .rx_eof_flags = {},
+  };
+
+  err = uhci_new_controller(&uhci_config, &uhci_handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Unable to initialize UART DMA controller, ERR: %s",
+             esp_err_to_name(err));
+    vTaskDelay(pdMS_TO_TICKS(RESTART_DELAY));
+    esp_restart();
+  }
+
+  uhci_event_callbacks_t callbacks = {
+      .on_rx_trans_event = nullptr,
+      .on_tx_trans_done = uart_tx_done_callback,
+  };
+
+  err = uhci_register_event_callbacks(uhci_handle, &callbacks, free_buffers);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Unable to register UART DMA callbacks, ERR: %s",
+             esp_err_to_name(err));
+    vTaskDelay(pdMS_TO_TICKS(RESTART_DELAY));
+    esp_restart();
+  }
 }
 
 void init_buffers() {
@@ -117,7 +192,7 @@ void init_buffers() {
     esp_restart();
   }
 
-  for (uint8_t i = 0; i < BUFFERS_COUNT; i++) {
+  for (size_t i = 0; i < BUFFERS_COUNT; i++) {
     uint8_t *buffer = static_cast<uint8_t *>(
         heap_caps_malloc(BUFFER_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
     if (buffer == NULL) {
@@ -125,7 +200,7 @@ void init_buffers() {
       vTaskDelay(pdMS_TO_TICKS(RESTART_DELAY));
       esp_restart();
     }
-    BaseType_t res = xQueueSend(free_buffers, buffer, 0);
+    BaseType_t res = xQueueSend(free_buffers, &buffer, 0);
 
     if (res != pdTRUE) {
       ESP_LOGE(TAG, "Unable to fill free_buffers queue");
@@ -160,14 +235,21 @@ void adc_to_uart_task(void *arg) {
     esp_err_t err = adc_continuous_read(adc_handle, buffer, BUFFER_SIZE,
                                         &bytes_read, ADC_MAX_DELAY);
     if (err != ESP_OK) {
-      ESP_LOGW(TAG, "Unable to start read from ADC");
+      ESP_LOGW(TAG, "Unable to read data from ADC, ERR: %s",
+               esp_err_to_name(err));
+      xQueueSend(free_buffers, &buffer, portMAX_DELAY);
+      continue;
+    }
+
+    if (bytes_read == 0) {
       xQueueSend(free_buffers, &buffer, portMAX_DELAY);
       continue;
     }
 
     err = uhci_transmit(uhci_handle, buffer, bytes_read);
     if (err != ESP_OK) {
-      ESP_LOGW(TAG, "Unable to send data to UART");
+      ESP_LOGW(TAG, "Unable to send data to UART, ERR: %s",
+               esp_err_to_name(err));
       xQueueSend(free_buffers, &buffer, portMAX_DELAY);
       continue;
     }
@@ -179,9 +261,10 @@ bool uart_tx_done_callback(uhci_controller_handle_t controller,
                            void *user_data) {
   BaseType_t task_woken = pdFALSE;
 
+  auto queue = static_cast<QueueHandle_t>(user_data);
   uint8_t *buffer = event->buffer;
 
-  xQueueSendFromISR(free_buffers, &buffer, &task_woken);
+  xQueueSendFromISR(queue, &buffer, &task_woken);
 
   return task_woken == pdTRUE;
 }
