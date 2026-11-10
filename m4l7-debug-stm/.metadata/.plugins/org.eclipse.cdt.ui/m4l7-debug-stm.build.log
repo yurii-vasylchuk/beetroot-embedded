@@ -1,0 +1,10 @@
+23:25:34 **** Incremental Build of configuration Debug for project m4l7-debug-stm ****
+make -j9 all 
+arm-none-eabi-size  m4l7-debug-stm.elf 
+   text	   data	    bss	    dec	    hex	filename
+  21604	    116	  20908	  42628	   a684	m4l7-debug-stm.elf
+Finished building: default.size.stdout
+ 
+
+23:25:34 Build Finished. 0 errors, 0 warnings. (took 86ms)
+
