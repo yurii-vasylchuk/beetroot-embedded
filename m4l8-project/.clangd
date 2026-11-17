@@ -1,0 +1,12 @@
+CompileFlags:
+  Add:
+    - -Wno-unknown-attributes
+    - -Wno-attributes
+  Remove:
+    - -m*
+    - -f*
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+
